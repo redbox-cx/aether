@@ -16,6 +16,14 @@ public final class ProtocolConstants {
     /** Maximum plaintext size of one FILE_CHUNK. */
     public static final int CHUNK_SIZE = 64 * 1024;
 
+    /** AES-GCM IV: 4 random bytes per transfer + 8 bytes chunk index. */
+    public static final int IV_SIZE = 12;
+
+    /** AES-GCM authentication tag appended to every ciphertext (128 bit). */
+    public static final int TAG_SIZE = 16;
+
+    public static final int SHA256_SIZE = 32;
+
     /** Upper limit for a payload we accept, protects against huge length fields. */
     public static final int MAX_PAYLOAD = 1024 * 1024;
 
