@@ -29,6 +29,7 @@ public final class ProtocolConstants {
 
     public static final Duration HELLO_INTERVAL = Duration.ofSeconds(2);
     public static final Duration DEVICE_TIMEOUT = Duration.ofSeconds(10);
+    public static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     public static final Duration KEY_EXCHANGE_TIMEOUT = Duration.ofSeconds(5);
     public static final Duration DECISION_TIMEOUT = Duration.ofSeconds(300);
 

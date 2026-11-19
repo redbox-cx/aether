@@ -55,6 +55,28 @@ public final class MessageCodec {
             throw new ProtocolException(ErrorCode.IO_ERROR, "Frame too short: " + length + " bytes");
         }
         ByteBuffer frame = ByteBuffer.wrap(data, offset, length);
+        Header header = readHeader(frame);
+        if (header.payloadLength() != frame.remaining()) {
+            throw new ProtocolException(ErrorCode.IO_ERROR, "Payload length " + header.payloadLength()
+                    + " does not match " + frame.remaining() + " received bytes");
+        }
+        byte[] payload = new byte[header.payloadLength()];
+        frame.get(payload);
+        return decodePayload(header.type(), payload);
+    }
+
+    /**
+     * Validates the first {@link ProtocolConstants#HEADER_SIZE} bytes of a frame and returns
+     * the announced payload length. Used by stream readers before they allocate the payload.
+     */
+    static int payloadLength(byte[] header) throws ProtocolException {
+        return readHeader(ByteBuffer.wrap(header, 0, HEADER_SIZE)).payloadLength();
+    }
+
+    private record Header(MessageType type, int payloadLength) {
+    }
+
+    private static Header readHeader(ByteBuffer frame) throws ProtocolException {
         int version = Byte.toUnsignedInt(frame.get());
         if (version != VERSION) {
             throw new ProtocolException(ErrorCode.UNSUPPORTED_VERSION, "Unsupported version: " + version);
@@ -64,13 +86,7 @@ public final class MessageCodec {
         if (payloadLength < 0 || payloadLength > MAX_PAYLOAD) {
             throw new ProtocolException(ErrorCode.IO_ERROR, "Invalid payload length: " + payloadLength);
         }
-        if (payloadLength != frame.remaining()) {
-            throw new ProtocolException(ErrorCode.IO_ERROR,
-                    "Payload length " + payloadLength + " does not match " + frame.remaining() + " received bytes");
-        }
-        byte[] payload = new byte[payloadLength];
-        frame.get(payload);
-        return decodePayload(type, payload);
+        return new Header(type, payloadLength);
     }
 
     private static byte[] encodePayload(Message message) {
