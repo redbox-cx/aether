@@ -8,7 +8,7 @@ public interface TransferListener {
     /**
      * Someone wants to send us a file. The UI shows the dialog (F-04) and calls
      * {@link IncomingRequest#accept()} or {@link IncomingRequest#reject()} (F-05).
-     * Without an answer the request is rejected automatically after 120 s.
+     * Without an answer the request is rejected automatically after 300 s.
      */
     void onIncomingRequest(IncomingRequest request);
 
