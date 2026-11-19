@@ -41,7 +41,7 @@ public sealed interface Message {
         }
     }
 
-    /** Receiver → sender: the user rejected or did not answer within 120 s. Connection is closed afterwards. */
+    /** Receiver → sender: the user rejected or did not answer within 300 s. Connection is closed afterwards. */
     record TransferReject(UUID transferId, String reason) implements Message {
         public static final String USER = "USER";
         public static final String TIMEOUT = "TIMEOUT";

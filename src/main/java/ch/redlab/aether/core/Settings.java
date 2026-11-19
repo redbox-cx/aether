@@ -60,7 +60,7 @@ public class Settings {
         this.deviceName = deviceName;
     }
 
-    /** Where received files are saved (default: Downloads/Aether). */
+    /** Where received files are saved (default: Documents/Aether). */
     public Path getDownloadDir() {
         return downloadDir;
     }
@@ -82,6 +82,6 @@ public class Settings {
     }
 
     private static Path defaultDownloadDir() {
-        return Path.of(System.getProperty("user.home"), "Downloads", "Aether");
+        return Path.of(System.getProperty("user.home"), "Documents", "Aether");
     }
 }
