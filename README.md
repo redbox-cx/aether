@@ -20,11 +20,19 @@ Tests: `mvn test`
 
 ## Structure
 
-| Package     | Purpose                                          |
-|-------------|--------------------------------------------------|
-| `ui`        | JavaFX user interface (FXML + controllers)       |
-| `core`      | Application logic, transfer flow                 |
-| `protocol`  | Aether Transfer Protocol (ATP v1)                |
-| `crypto`    | X25519, AES-256-GCM, security code               |
-| `network`   | UDP device discovery (47800), TCP transfer (47801) |
-| `model`     | Device, Transfer, FileInfo, Chunk, SessionKey    |
+| Package    | Purpose                                            |
+|------------|----------------------------------------------------|
+| `ui`       | JavaFX user interface (FXML + controllers)         |
+| `core`     | Application logic, transfer flow                   |
+| `protocol` | Aether Transfer Protocol (ATP v1)                  |
+| `crypto`   | X25519, AES-256-GCM, security code                 |
+| `network`  | UDP device discovery (47800), TCP transfer (47801) |
+| `model`    | Device, Transfer, FileInfo, Chunk, SessionKey      |
+
+## Workflow
+
+- `main` is protected, changes go through pull requests.
+- One branch per task from the project plan, e.g. `feature/f01-discovery`, `feature/f06-protocol`, `feature/f02-f03-send-ui`.
+- Keep pull requests small and merge often.
+- Shared files (`pom.xml`, `AetherApp`, `main-view.fxml`) only after agreeing in the team.
+- The UI only talks to `core.AetherBackend`. Until the real backend exists, use `core.DemoBackend`.
