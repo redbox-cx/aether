@@ -1,6 +1,6 @@
 package ch.redlab.aether.model;
 
-/** Lifecycle of a transfer (Konzeptbericht 2.1, entity "Übertragung"). */
+/** Lifecycle of a transfer (Konzeptbericht 2.1, entity "transfer"). */
 public enum TransferStatus {
     /** Request sent / received, waiting for the receiver to decide. */
     REQUESTED,

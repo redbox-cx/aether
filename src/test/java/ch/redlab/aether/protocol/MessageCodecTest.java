@@ -25,8 +25,9 @@ class MessageCodecTest {
     }
 
     @Test
-    void helloWithUmlautsAndEmojiRoundTrip() throws Exception {
-        Message.Hello hello = new Message.Hello("id", "Noels Läptop 💻", 47801);
+    void helloWithNonAsciiNameRoundTrip() throws Exception {
+        // Accented letter plus a character outside the BMP (musical G clef, written as surrogate pair).
+        Message.Hello hello = new Message.Hello("id", "Zo\u00eb's laptop \uD834\uDD1E", 47801);
 
         assertEquals(hello, MessageCodec.decode(MessageCodec.encode(hello)));
     }

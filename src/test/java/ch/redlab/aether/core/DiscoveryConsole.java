@@ -20,7 +20,7 @@ public class DiscoveryConsole {
         discovery.getRegistry().addListener(devices -> {
             System.out.println(LocalTime.now().withNano(0) + "  " + devices.size() + " device(s)");
             if (devices.isEmpty()) {
-                System.out.println("    Keine Geräte gefunden");
+                System.out.println("    No devices found");
             }
             for (Device d : devices) {
                 System.out.println("    " + d.name() + " – " + d.address().getHostAddress());
