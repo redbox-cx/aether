@@ -112,13 +112,13 @@ class MessageCodecTest {
     @Test
     void transferRequestRoundTrip() throws Exception {
         Message.TransferRequest request = new Message.TransferRequest(
-                ID, "Laptop", "bericht.pdf", 50_000_000L, bytes(32, 1), bytes(44, 2));
+                ID, "Laptop", "report.pdf", 50_000_000L, bytes(32, 1), bytes(44, 2));
 
         var decoded = assertInstanceOf(Message.TransferRequest.class, roundTrip(request));
 
         assertEquals(ID, decoded.transferId());
         assertEquals("Laptop", decoded.senderName());
-        assertEquals("bericht.pdf", decoded.fileName());
+        assertEquals("report.pdf", decoded.fileName());
         assertEquals(50_000_000L, decoded.fileSize());
         assertArrayEquals(request.sha256(), decoded.sha256());
         assertArrayEquals(request.senderPublicKey(), decoded.senderPublicKey());
@@ -155,7 +155,7 @@ class MessageCodecTest {
                 new Message.TransferComplete(ID, 763),
                 new Message.TransferAck(ID, Message.TransferAck.OK),
                 new Message.TransferAck(ID, Message.TransferAck.HASH_MISMATCH),
-                new Message.Error(ErrorCode.CANCELLED, "Abgebrochen durch Benutzer"),
+                new Message.Error(ErrorCode.CANCELLED, "Cancelled by user"),
         };
         for (Message message : messages) {
             assertEquals(message, roundTrip(message));
