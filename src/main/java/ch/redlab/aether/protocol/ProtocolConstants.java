@@ -33,6 +33,12 @@ public final class ProtocolConstants {
     public static final Duration KEY_EXCHANGE_TIMEOUT = Duration.ofSeconds(5);
     public static final Duration DECISION_TIMEOUT = Duration.ofSeconds(300);
 
+    /**
+     * Longest silence while a message is expected from the peer (first message, chunks, ACK).
+     * Not defined in the Konzeptbericht; protects against a peer that stops sending without closing.
+     */
+    public static final Duration IDLE_TIMEOUT = Duration.ofSeconds(30);
+
     private ProtocolConstants() {
     }
 }
