@@ -30,7 +30,7 @@ class MessageChannelTest {
     @Test
     void allMessageTypesArriveInOrder() throws Exception {
         List<Message> messages = List.of(
-                new Message.TransferRequest(ID, "Laptop", "bericht.pdf", 123_456, bytes(32, 1), bytes(44, 2)),
+                new Message.TransferRequest(ID, "Laptop", "report.pdf", 123_456, bytes(32, 1), bytes(44, 2)),
                 new Message.KeyExchange(ID, bytes(44, 3)),
                 new Message.TransferAccept(ID),
                 new Message.FileChunk(0, bytes(12, 4), bytes(100, 5)),
@@ -38,7 +38,7 @@ class MessageChannelTest {
                 new Message.TransferComplete(ID, 2),
                 new Message.TransferAck(ID, Message.TransferAck.OK),
                 new Message.TransferReject(ID, Message.TransferReject.TIMEOUT),
-                new Message.Error(ErrorCode.CANCELLED, "Abgebrochen"));
+                new Message.Error(ErrorCode.CANCELLED, "Cancelled"));
 
         try (LoopbackPair pair = LoopbackPair.open()) {
             MessageChannel sender = new MessageChannel(pair.client());

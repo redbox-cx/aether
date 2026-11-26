@@ -45,7 +45,7 @@ public class UdpBroadcaster implements AutoCloseable {
             socket = new DatagramSocket(port);
             socket.setBroadcast(true);
         } catch (SocketException e) {
-            throw new IOException("UDP-Port " + port + " ist belegt oder blockiert", e);
+            throw new IOException("UDP port " + port + " is in use or blocked", e);
         }
     }
 

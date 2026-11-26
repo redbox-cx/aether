@@ -33,7 +33,7 @@ public class DemoBackend implements AetherBackend {
         InetAddress local = InetAddress.getLoopbackAddress();
         this.devices = List.of(
                 new Device("demo-1", "Desktop-PC", local, 47801, Instant.now()),
-                new Device("demo-2", "Laptop Wohnzimmer", local, 47801, Instant.now()));
+                new Device("demo-2", "Living room laptop", local, 47801, Instant.now()));
     }
 
     @Override
