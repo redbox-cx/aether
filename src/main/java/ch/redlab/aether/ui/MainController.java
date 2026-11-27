@@ -169,13 +169,13 @@ public class MainController {
 
         emptyLabel.visibleProperty().bind(Bindings.isEmpty(filteredDevices));
         emptyLabel.textProperty().bind(Bindings.when(Bindings.isEmpty(devices))
-                .then("Keine Geräte gefunden")
-                .otherwise("Kein Gerät passt zur Suche"));
+                .then("No devices found")
+                .otherwise("No device matches the search"));
 
         deviceList.getSelectionModel().selectedItemProperty().addListener((obs, old, device) -> {
             targetLabel.setText(device == null
-                    ? "Wähle links ein Gerät. Datei hierher ziehen oder auswählen."
-                    : "Empfänger: " + device.name());
+                    ? "Select a device on the left. Drop a file here or choose one."
+                    : "Receiver: " + device.name());
             updateSendButton();
         });
     }
@@ -200,7 +200,7 @@ public class MainController {
     @FXML
     private void onChooseFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Datei wählen");
+        chooser.setTitle("Choose file");
         if (selectedFile != null && selectedFile.getParent() != null) {
             chooser.setInitialDirectory(selectedFile.getParent().toFile());
         }
@@ -211,7 +211,7 @@ public class MainController {
     }
 
     /**
-     * A single file can be dropped on the content area (same effect as "Datei wählen").
+     * A single file can be dropped on the content area (same effect as "Choose file").
      * Folders and several files at once are not accepted, Aether sends one file per transfer.
      */
     private void setUpFileDrop() {
@@ -308,7 +308,7 @@ public class MainController {
         showTransfer(transfer);
     }
 
-    /** "Senden" is only active when a device is selected and the file's hash is ready. */
+    /** "Send" is only active when a device is selected and the file's hash is ready. */
     private void updateSendButton() {
         boolean ready = deviceList.getSelectionModel().getSelectedItem() != null
                 && selectedFile != null
@@ -323,15 +323,15 @@ public class MainController {
         setShown(transferBox, true);
         String peer = transfer.getPeerName();
         String text = switch (transfer.getStatus()) {
-            case REQUESTED -> "Warte auf Bestätigung von " + peer + " …"
-                    + (transfer.getSecurityCode() == null ? "" : "\nSicherheitscode: " + transfer.getSecurityCode());
-            case ACCEPTED -> peer + " hat angenommen.";
-            case RUNNING -> String.format(Locale.ROOT, "Sende an %s … %d %%", peer,
+            case REQUESTED -> "Waiting for " + peer + " to accept …"
+                    + (transfer.getSecurityCode() == null ? "" : "\nSecurity code: " + transfer.getSecurityCode());
+            case ACCEPTED -> peer + " accepted.";
+            case RUNNING -> String.format(Locale.ROOT, "Sending to %s … %d %%", peer,
                     Math.round(transfer.getProgress() * 100));
-            case COMPLETED -> "Datei an " + peer + " gesendet.";
-            case REJECTED -> peer + " hat abgelehnt." + detail(transfer);
-            case CANCELLED -> "Übertragung abgebrochen." + detail(transfer);
-            case FAILED -> "Übertragung fehlgeschlagen." + detail(transfer);
+            case COMPLETED -> "File sent to " + peer + ".";
+            case REJECTED -> peer + " declined." + detail(transfer);
+            case CANCELLED -> "Transfer cancelled." + detail(transfer);
+            case FAILED -> "Transfer failed." + detail(transfer);
         };
         transferLabel.setText(text);
         transferProgress.setProgress(transfer.getProgress());
@@ -356,11 +356,11 @@ public class MainController {
             uploadPane.setVisible(upload);
             placeholderPane.setVisible(!upload);
             if (now == requestsTab) {
-                placeholderPane.setText("Anfragen (F-04 / F-05) folgen.");
+                placeholderPane.setText("Requests (F-04 / F-05) are coming soon.");
             } else if (now == progressTab) {
-                placeholderPane.setText("Fortschritt (F-07) folgt.");
+                placeholderPane.setText("Progress (F-08) is coming soon.");
             } else if (now == settingsTab) {
-                placeholderPane.setText("Einstellungen folgen.");
+                placeholderPane.setText("Settings are coming soon.");
             }
         });
     }
