@@ -54,7 +54,7 @@
             <StackPane VBox.vgrow="ALWAYS">
                 <VBox.margin><Insets top="17" right="3"/></VBox.margin>
                 <ListView fx:id="deviceList" styleClass="device-list"/>
-                <Label fx:id="emptyLabel" styleClass="empty-label" text="Keine Geräte gefunden"
+                <Label fx:id="emptyLabel" styleClass="empty-label" text="No devices found"
                        wrapText="true" StackPane.alignment="TOP_CENTER">
                     <StackPane.margin><Insets top="20"/></StackPane.margin>
                 </Label>
@@ -121,9 +121,9 @@
                                 <SvgIcon source="images/logo-green.svg" size="52"/>
                             </HBox>
 
-                            <Label fx:id="targetLabel" styleClass="hint-label" text="Wähle links ein Gerät. Datei hierher ziehen oder auswählen."/>
+                            <Label fx:id="targetLabel" styleClass="hint-label" text="Select a device on the left. Drop a file here or choose one."/>
 
-                            <Button fx:id="chooseFileButton" styleClass="aero-button" text="Datei wählen"
+                            <Button fx:id="chooseFileButton" styleClass="aero-button" text="Choose file"
                                     onAction="#onChooseFile"/>
 
                             <GridPane fx:id="fileInfoGrid" styleClass="file-info" hgap="10" vgap="4"
@@ -134,7 +134,7 @@
                                 </columnConstraints>
                                 <Label text="Name" styleClass="info-key" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
                                 <Label fx:id="fileNameLabel" styleClass="info-value" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                                <Label text="Grösse" styleClass="info-key" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <Label text="Size" styleClass="info-key" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                                 <Label fx:id="fileSizeLabel" styleClass="info-value" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
                                 <Label text="SHA-256" styleClass="info-key" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
                                 <HBox spacing="6" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
@@ -145,7 +145,7 @@
                                 </HBox>
                             </GridPane>
 
-                            <Button fx:id="sendButton" styleClass="aero-button, send-button" text="Senden"
+                            <Button fx:id="sendButton" styleClass="aero-button, send-button" text="Send"
                                     defaultButton="true" disable="true" onAction="#onSend"/>
 
                             <VBox fx:id="transferBox" alignment="CENTER" spacing="6" maxWidth="380"
@@ -157,7 +157,7 @@
                         </VBox>
 
                         <Label fx:id="placeholderPane" styleClass="hint-label" visible="false"
-                               text="Dieser Bereich folgt."/>
+                               text="This section is coming soon."/>
                     </StackPane>
                 </VBox>
             </HBox>

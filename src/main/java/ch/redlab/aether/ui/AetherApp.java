@@ -68,8 +68,8 @@ public class AetherApp extends Application {
             backend.start();
         } catch (IOException e) {
             Alert alert = new Alert(Alert.AlertType.ERROR,
-                    "Aether konnte nicht starten:\n" + e.getMessage());
-            alert.setHeaderText("Start fehlgeschlagen");
+                    "Aether could not start:\n" + e.getMessage());
+            alert.setHeaderText("Start failed");
             alert.showAndWait();
             Platform.exit();
         }
