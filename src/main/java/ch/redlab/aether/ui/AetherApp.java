@@ -2,6 +2,7 @@ package ch.redlab.aether.ui;
 
 import ch.redlab.aether.core.AetherBackend;
 import ch.redlab.aether.core.DemoBackend;
+import ch.redlab.aether.core.NetworkBackend;
 import ch.redlab.aether.core.Settings;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -36,8 +37,9 @@ public class AetherApp extends Application {
     public void start(Stage stage) throws Exception {
         boolean sansation = loadBundledFonts();
 
-        // Until the real backend exists the UI runs on the DemoBackend.
-        backend = new DemoBackend(Settings.load());
+        // Real network backend; start with -Daether.demo=true to work on the UI without a network.
+        Settings settings = Settings.load();
+        backend = Boolean.getBoolean("aether.demo") ? new DemoBackend(settings) : new NetworkBackend(settings);
         controller = new MainController(backend);
 
         FXMLLoader loader = new FXMLLoader(AetherApp.class.getResource("main-view.fxml"));
