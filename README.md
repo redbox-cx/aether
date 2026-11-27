@@ -35,4 +35,4 @@ Tests: `mvn test`
 - One branch per task from the project plan, e.g. `feature/f01-discovery`, `feature/f06-protocol`, `feature/f02-f03-send-ui`.
 - Keep pull requests small and merge often.
 - Shared files (`pom.xml`, `AetherApp`, `main-view.fxml`) only after agreeing in the team.
-- The UI only talks to `core.AetherBackend`. Until the real backend exists, use `core.DemoBackend`.
+- The UI only talks to `core.AetherBackend`. The app uses `core.NetworkBackend`; to work on the UI without a network, start it with `-Daether.demo=true` (uses `core.DemoBackend`).

@@ -401,6 +401,51 @@
     -fx-background-insets: 0, 0 1 1 1, 3 4 4 4;
 }
 
+/* ---------------------------------------------------------------- Requests tab (F-04 / F-05) */
+
+.requests-pane,
+.requests-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.request-list {
+    -fx-padding: 20;
+}
+
+/* Same panel as .file-info, a bit roomier */
+.request-card {
+    -fx-background-color: #d2d2d2, #f7f7f7;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 3, 2;
+    -fx-padding: 14 16 14 16;
+}
+
+.request-card.request-done {
+    -fx-background-color: #7cd271, #f3fbf2;
+}
+
+.request-card.request-failed {
+    -fx-background-color: #d2d2d2, #efefef;
+}
+
+.request-title {
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+/* Compared aloud between the two screens (UC4), so large and monospaced */
+.security-code {
+    -fx-text-fill: #2c628b;
+    -fx-font-family: "Monospaced";
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.request-card .aero-button {
+    -fx-min-width: 100;
+}
+
 /* ---------------------------------------------------------------- normal Windows window frame */
 
 /* The Figma design has rounded outer corners; inside a native frame they would show the window
