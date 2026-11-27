@@ -1,8 +1,167 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import ch.redlab.aether.ui.SvgIcon?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.shape.SVGPath?>
 
-<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
-    <Label text="Aether – Privacy first. Always."/>
-</StackPane>
+<!--
+  Main window, built after the Figma design (Frame 1, page 0:1).
+  Coordinates in the comments are Figma positions; the window origin is (22, 24).
+  The window is undecorated, so the title bar buttons are our own (Figma 22:46, 20:41, 20:38).
+-->
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:id="root" styleClass="window">
+
+    <!-- Left column: title strip (22:105) + device sidebar (3:4), Figma 231 px, here 280 px -->
+    <VBox styleClass="side-column" minWidth="280" prefWidth="280" maxWidth="280">
+        <HBox fx:id="titleStrip" styleClass="title-strip" alignment="CENTER_LEFT"
+              minHeight="30" prefHeight="30" maxHeight="30">
+            <SvgIcon source="images/logo.svg" size="16"/>
+        </HBox>
+
+        <VBox styleClass="sidebar" VBox.vgrow="ALWAYS">
+            <!-- Search field 3:107 / 3:108 / 5:123 -->
+            <HBox styleClass="search-box" alignment="CENTER_LEFT"
+                  minHeight="28" prefHeight="28" maxHeight="28">
+                <VBox.margin><Insets left="11" right="14"/></VBox.margin>
+                <StackPane minWidth="20" prefWidth="20" maxWidth="20" minHeight="20" maxHeight="20">
+                    <SVGPath styleClass="search-icon" scaleX="1.3" scaleY="1.3"
+                             content="M10.375 11.25L6.4375 7.3125C6.125 7.5625 5.76562 7.76042 5.35938 7.90625C4.95312 8.05208 4.52083 8.125 4.0625 8.125C2.92708 8.125 1.96615 7.73177 1.17969 6.94531C0.393229 6.15885 0 5.19792 0 4.0625C0 2.92708 0.393229 1.96615 1.17969 1.17969C1.96615 0.393229 2.92708 0 4.0625 0C5.19792 0 6.15885 0.393229 6.94531 1.17969C7.73177 1.96615 8.125 2.92708 8.125 4.0625C8.125 4.52083 8.05208 4.95312 7.90625 5.35938C7.76042 5.76562 7.5625 6.125 7.3125 6.4375L11.25 10.375L10.375 11.25ZM4.0625 6.875C4.84375 6.875 5.50781 6.60156 6.05469 6.05469C6.60156 5.50781 6.875 4.84375 6.875 4.0625C6.875 3.28125 6.60156 2.61719 6.05469 2.07031C5.50781 1.52344 4.84375 1.25 4.0625 1.25C3.28125 1.25 2.61719 1.52344 2.07031 2.07031C1.52344 2.61719 1.25 3.28125 1.25 4.0625C1.25 4.84375 1.52344 5.50781 2.07031 6.05469C2.61719 6.60156 3.28125 6.875 4.0625 6.875Z"/>
+                </StackPane>
+                <TextField fx:id="searchField" styleClass="search-field" promptText="Search Devices"
+                           HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <!-- Device cards 8:141 ... (rendered by DeviceCell) -->
+            <StackPane VBox.vgrow="ALWAYS">
+                <VBox.margin><Insets top="17" right="3"/></VBox.margin>
+                <ListView fx:id="deviceList" styleClass="device-list"/>
+                <Label fx:id="emptyLabel" styleClass="empty-label" text="Keine Geräte gefunden"
+                       wrapText="true" StackPane.alignment="TOP_CENTER">
+                    <StackPane.margin><Insets top="20"/></StackPane.margin>
+                </Label>
+            </StackPane>
+        </VBox>
+    </VBox>
+
+    <!-- Right part. The light 14 px strip from Figma (22:104) is left out on purpose:
+         in the app it looked like the sidebar was sticking out. -->
+    <BorderPane fx:id="mainRoot" HBox.hgrow="ALWAYS">
+        <center>
+            <HBox>
+                <VBox HBox.hgrow="ALWAYS">
+                    <!-- Header 22:118 with window buttons 25:120 and tab bar 22:119 -->
+                    <StackPane fx:id="header" styleClass="header-area" minHeight="75" prefHeight="75" maxHeight="75">
+                        <Region fx:id="headerBackground" styleClass="header-bg">
+                            <StackPane.margin><Insets top="12"/></StackPane.margin>
+                        </Region>
+
+                        <HBox fx:id="windowButtons" styleClass="window-buttons" StackPane.alignment="TOP_RIGHT"
+                              maxWidth="-Infinity" maxHeight="-Infinity">
+                            <StackPane.margin><Insets top="1"/></StackPane.margin>
+                            <Button fx:id="minimizeButton" styleClass="win-btn, win-min" focusTraversable="false"
+                                    onAction="#onMinimize">
+                                <graphic>
+                                    <Line startX="0" endX="11" styleClass="win-glyph-line"/>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="maximizeButton" styleClass="win-btn, win-max" focusTraversable="false"
+                                    onAction="#onMaximize">
+                                <graphic>
+                                    <Region styleClass="win-glyph-box" minWidth="6" prefWidth="6" maxWidth="6"
+                                            minHeight="6" prefHeight="6" maxHeight="6"/>
+                                </graphic>
+                            </Button>
+                            <Button fx:id="closeButton" styleClass="win-btn, win-close" text="X"
+                                    focusTraversable="false" onAction="#onClose"/>
+                        </HBox>
+
+                        <HBox styleClass="tab-bar" StackPane.alignment="BOTTOM_LEFT"
+                              minHeight="38" prefHeight="38" maxHeight="38">
+                            <fx:define><ToggleGroup fx:id="tabs"/></fx:define>
+                            <!-- All four tabs share the width evenly, so they grow with the window -->
+                            <ToggleButton fx:id="uploadTab" text="Upload" toggleGroup="$tabs" selected="true"
+                                          styleClass="tab-button" minWidth="80" prefWidth="100" maxWidth="Infinity" maxHeight="Infinity" HBox.hgrow="ALWAYS"/>
+                            <ToggleButton fx:id="requestsTab" text="Requests" toggleGroup="$tabs"
+                                          styleClass="tab-button" minWidth="80" prefWidth="100" maxWidth="Infinity" maxHeight="Infinity" HBox.hgrow="ALWAYS"/>
+                            <ToggleButton fx:id="progressTab" text="Progress" toggleGroup="$tabs"
+                                          styleClass="tab-button" minWidth="80" prefWidth="100" maxWidth="Infinity" maxHeight="Infinity" HBox.hgrow="ALWAYS"/>
+                            <ToggleButton fx:id="settingsTab" text="Settings" toggleGroup="$tabs"
+                                          styleClass="tab-button" minWidth="80" prefWidth="100" maxWidth="Infinity" maxHeight="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                    </StackPane>
+
+                    <!-- Content 3:15 -->
+                    <StackPane fx:id="contentArea" styleClass="content-area" VBox.vgrow="ALWAYS">
+
+                        <!-- F-02 / F-03: choose device and file, send -->
+                        <VBox fx:id="uploadPane" styleClass="upload-pane" alignment="CENTER" spacing="14">
+                            <!-- Icons 22:110 / 22:116 / 22:113 -->
+                            <HBox alignment="CENTER" spacing="7">
+                                <SvgIcon source="images/logo-blue.svg" size="52"/>
+                                <SvgIcon source="images/logo-orange.svg" size="52"/>
+                                <SvgIcon source="images/logo-green.svg" size="52"/>
+                            </HBox>
+
+                            <Label fx:id="targetLabel" styleClass="hint-label" text="Wähle links ein Gerät. Datei hierher ziehen oder auswählen."/>
+
+                            <Button fx:id="chooseFileButton" styleClass="aero-button" text="Datei wählen"
+                                    onAction="#onChooseFile"/>
+
+                            <GridPane fx:id="fileInfoGrid" styleClass="file-info" hgap="10" vgap="4"
+                                      maxWidth="560" visible="false" managed="false">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="60"/>
+                                    <ColumnConstraints hgrow="ALWAYS"/>
+                                </columnConstraints>
+                                <Label text="Name" styleClass="info-key" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <Label fx:id="fileNameLabel" styleClass="info-value" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                                <Label text="Grösse" styleClass="info-key" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                                <Label fx:id="fileSizeLabel" styleClass="info-value" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                                <Label text="SHA-256" styleClass="info-key" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <HBox spacing="6" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                                    <ProgressIndicator fx:id="hashProgress" styleClass="hash-progress"
+                                                       prefWidth="14" prefHeight="14" visible="false" managed="false"/>
+                                    <TextField fx:id="hashField" styleClass="hash-field" editable="false"
+                                               focusTraversable="false" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                            </GridPane>
+
+                            <Button fx:id="sendButton" styleClass="aero-button, send-button" text="Senden"
+                                    defaultButton="true" disable="true" onAction="#onSend"/>
+
+                            <VBox fx:id="transferBox" alignment="CENTER" spacing="6" maxWidth="380"
+                                  visible="false" managed="false">
+                                <Label fx:id="transferLabel" styleClass="transfer-label" wrapText="true"/>
+                                <ProgressBar fx:id="transferProgress" styleClass="aero-progress"
+                                             maxWidth="Infinity" progress="0"/>
+                            </VBox>
+                        </VBox>
+
+                        <Label fx:id="placeholderPane" styleClass="hint-label" visible="false"
+                               text="Dieser Bereich folgt."/>
+                    </StackPane>
+                </VBox>
+            </HBox>
+        </center>
+        <!-- bottom: status bar 20:9, set in MainController (root.setBottom) -->
+    </BorderPane>
+</HBox>
