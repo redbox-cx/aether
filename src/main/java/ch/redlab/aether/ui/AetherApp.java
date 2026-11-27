@@ -49,6 +49,7 @@ public class AetherApp extends Application {
             root.getStyleClass().add("sansation");
         }
         controller.setStatusBar(createStatusBar());
+        controller.setHostServices(getHostServices());
 
         // Normal Windows window frame: opaque scene, so text keeps ClearType smoothing (a transparent window
         // makes JavaFX fall back to blurry grayscale text).

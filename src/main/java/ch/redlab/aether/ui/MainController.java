@@ -4,10 +4,12 @@ import ch.redlab.aether.core.AetherBackend;
 import ch.redlab.aether.core.IncomingRequest;
 import ch.redlab.aether.core.TransferListener;
 import ch.redlab.aether.model.Device;
+import ch.redlab.aether.model.Direction;
 import ch.redlab.aether.model.FileInfo;
 import ch.redlab.aether.model.Transfer;
 import ch.redlab.aether.model.TransferStatus;
 import javafx.geometry.Insets;
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -45,7 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Controller of the main window (F-02 choose device, F-03 choose and send file).
+ * Controller of the main window (F-02 choose device, F-03 choose and send file,
+ * F-04 / F-05 incoming requests in the Requests tab).
  * Contains no network logic, it only talks to {@link AetherBackend}.
  * All backend callbacks arrive on background threads and are moved to the FX thread with
  * {@link Platform#runLater(Runnable)}.
@@ -81,6 +84,7 @@ public class MainController {
     @FXML private StackPane contentArea;
     @FXML private VBox uploadPane;
     @FXML private Label placeholderPane;
+    @FXML private RequestsPane requestsPane;
 
     @FXML private Label targetLabel;
     @FXML private Button chooseFileButton;
@@ -103,6 +107,7 @@ public class MainController {
     private volatile UUID currentTransferId;
 
     private Stage stage;
+    private HostServices hostServices;
 
     public MainController(AetherBackend backend) {
         this.backend = backend;
@@ -113,17 +118,24 @@ public class MainController {
         setUpDeviceList();
         setUpTabs();
         setUpFileDrop();
+        setUpRequests();
 
         backend.addDeviceListener(list -> Platform.runLater(() -> updateDevices(list)));
         backend.addTransferListener(new TransferListener() {
             @Override
             public void onIncomingRequest(IncomingRequest request) {
-                // F-04 / F-05 (receive dialog) is not part of this view yet.
+                Platform.runLater(() -> showRequest(request));
             }
 
             @Override
             public void onTransferUpdated(Transfer transfer) {
-                Platform.runLater(() -> showTransfer(transfer));
+                Platform.runLater(() -> {
+                    if (transfer.getDirection() == Direction.INCOMING) {
+                        requestsPane.update(transfer);
+                    } else {
+                        showTransfer(transfer);
+                    }
+                });
             }
         });
         updateDevices(backend.getDevices());
@@ -137,6 +149,11 @@ public class MainController {
         // starts at the very top instead of leaving the transparent strip of the frameless design.
         setShown(windowButtons, false);
         StackPane.setMargin(headerBackground, new Insets(0));
+    }
+
+    /** Used to open the folder of a received file in the Windows Explorer. */
+    void setHostServices(HostServices hostServices) {
+        this.hostServices = hostServices;
     }
 
     /** Places the status bar below the content (Figma 20:9). */
@@ -341,6 +358,33 @@ public class MainController {
         return transfer.getMessage() == null ? "" : " (" + transfer.getMessage() + ")";
     }
 
+    // ---------------------------------------------------------------- incoming requests (F-04 / F-05)
+
+    private void setUpRequests() {
+        // Cancelling sends an ERROR over the network, so it does not run on the FX thread.
+        requestsPane.setOnCancel(id -> Thread.ofVirtual().name("cancel").start(() -> backend.cancel(id)));
+        requestsPane.setOnOpenFolder(this::openFolder);
+        requestsPane.pendingProperty().addListener((obs, old, count) ->
+                requestsTab.setText(IncomingText.tabTitle(count.intValue())));
+    }
+
+    /** Shows a new request and brings the window to the front, so the user notices it (UC3 step 2). */
+    private void showRequest(IncomingRequest request) {
+        requestsPane.addRequest(request);
+        tabs.selectToggle(requestsTab);
+        if (stage != null) {
+            stage.setIconified(false);
+            stage.toFront();
+            stage.requestFocus();
+        }
+    }
+
+    private void openFolder(Path folder) {
+        if (hostServices != null) {
+            hostServices.showDocument(folder.toUri().toString());
+        }
+    }
+
     // ---------------------------------------------------------------- tabs and window
 
     private void setUpTabs() {
@@ -350,12 +394,10 @@ public class MainController {
                 tabs.selectToggle(old);
                 return;
             }
-            boolean upload = now == uploadTab;
-            uploadPane.setVisible(upload);
-            placeholderPane.setVisible(!upload);
-            if (now == requestsTab) {
-                placeholderPane.setText("Requests (F-04 / F-05) are coming soon.");
-            } else if (now == progressTab) {
+            uploadPane.setVisible(now == uploadTab);
+            requestsPane.setVisible(now == requestsTab);
+            placeholderPane.setVisible(now == progressTab || now == settingsTab);
+            if (now == progressTab) {
                 placeholderPane.setText("Progress (F-08) is coming soon.");
             } else if (now == settingsTab) {
                 placeholderPane.setText("Settings are coming soon.");
