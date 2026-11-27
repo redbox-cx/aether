@@ -1,0 +1,402 @@
+/*
+ * Main window after the Figma design (Windows 7 / Aero, light).
+ * Values in the comments are the Figma node ids. Colours, radii and gradients are taken 1:1;
+ * font sizes and the device cards are about 1.3 times larger than in Figma for readability.
+ * Font: Sansation if it is installed or bundled (style class "sansation" on the root),
+ * otherwise Segoe UI.
+ */
+
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 14px;
+    -fx-background-color: transparent;
+}
+
+.root.sansation {
+    -fx-font-family: "Sansation";
+}
+
+.window {
+    -fx-background-color: transparent;
+}
+
+/* ---------------------------------------------------------------- left column */
+
+/* 22:105: #f3f3f3, border #d2d2d2, rounded top-left 5 / top-right 10 */
+.title-strip {
+    -fx-background-color: #d2d2d2, #f3f3f3;
+    -fx-background-insets: 0, 1 1 0 1;
+    -fx-background-radius: 5 10 0 0, 4 9 0 0;
+    -fx-padding: 0 0 0 8;
+}
+
+/* 3:4: gradient #eeeeee -> #d0d0d0, border #d2d2d2 top/bottom/left, bottom-left radius 5 */
+.sidebar {
+    -fx-background-color: #d2d2d2, linear-gradient(to bottom, #eeeeee, #d0d0d0);
+    -fx-background-insets: 0, 1 0 1 1;
+    -fx-background-radius: 0 0 0 5, 0 0 0 4;
+    -fx-padding: 19 0 0 3;
+}
+
+/* 3:107: white, 0.3px #505050 border, radius 1, drop shadow 0 1 2 rgba(0,0,0,.25) */
+.search-box {
+    -fx-background-color: rgba(80, 80, 80, 0.55), white;
+    -fx-background-insets: 0, 0.3;
+    -fx-background-radius: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 2, 0, 0, 1);
+    -fx-padding: 0 0 0 7;
+}
+
+/* 5:123: Material search icon, #1d1b20 */
+.search-icon {
+    -fx-fill: #1d1b20;
+}
+
+/* 3:108: "Search Devices", Sansation Light 8px, #1e1e1e */
+.search-field {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0 6 0 4;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #1e1e1e;
+    -fx-prompt-text-fill: #1e1e1e;
+    -fx-highlight-fill: #3399ff;
+}
+
+.device-list {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.device-list > .virtual-flow > .clipped-container > .sheet > .list-cell {
+    -fx-background-color: transparent;
+}
+
+.device-list .scroll-bar:vertical {
+    -fx-pref-width: 8;
+    -fx-background-color: transparent;
+}
+
+.device-list .scroll-bar .thumb {
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+    -fx-background-radius: 4;
+}
+
+.device-list .scroll-bar .increment-button,
+.device-list .scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.device-cell {
+    -fx-padding: 0 0 3 0;
+    -fx-background-color: transparent;
+    -fx-text-fill: #575757;
+}
+
+/* 15:6: not selected, gradient left -> right #dedede -> #f5f5f5, radius 2, shadow 0 2 1 */
+.device-card {
+    -fx-background-color: linear-gradient(to right, #dedede, #f5f5f5);
+    -fx-background-radius: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 1, 0, 0, 2);
+    -fx-padding: 0 14 0 9;
+    -fx-spacing: 10;
+    -fx-cursor: hand;
+    -fx-pref-height: 60;
+    -fx-min-height: 60;
+    -fx-max-height: 60;
+}
+
+.device-cell:hover .device-card {
+    -fx-background-color: linear-gradient(to right, #d2d2d2, #ececec);
+}
+
+/* 8:141: selected, gradient #b8b8b8 -> #d9d9d9, inner shadow 0 4 4 rgba(0,0,0,.25) */
+.device-cell:selected .device-card {
+    -fx-background-color: linear-gradient(to right, #b8b8b8, #d9d9d9);
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.25), 4, 0, 0, 4);
+}
+
+.device-list:focused .device-cell:selected .device-card {
+    -fx-border-color: transparent;
+}
+
+/* "Monitor" instance: stroke 1.6, #1e1e1e */
+.device-icon {
+    -fx-fill: transparent;
+    -fx-stroke: #1e1e1e;
+    -fx-stroke-width: 1.6;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+
+/* 9:143: Sansation Regular 9px, #575757 */
+.device-name {
+    -fx-font-size: 13px;
+    -fx-text-fill: #575757;
+}
+
+/* 9:160: Sansation Light 7px, #575757 */
+.device-address {
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #6b6b6b;
+}
+
+/* 22:50: green status dot, 10 x 10, radius 1 */
+.status-dot {
+    -fx-background-color: linear-gradient(to bottom, #7cd271 0%, #24aa12 32.093%, #7cd271 100%);
+    -fx-background-radius: 1;
+}
+
+/* 22:51: grey dot (offline), used with style class "offline" */
+.status-dot.offline {
+    -fx-background-color: linear-gradient(to bottom, #d7d7d7 0%, #a9a9a9 32.093%, #e5e5e5 100%);
+}
+
+.empty-label {
+    -fx-text-fill: #575757;
+    -fx-font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- right part */
+
+/* 22:118: gradient #c5c5c5 -> #969696, top-right radius 5 */
+.header-bg {
+    -fx-background-color: linear-gradient(to bottom, #c5c5c5, #969696);
+    -fx-background-radius: 0 5 0 0;
+}
+
+/* 25:120: gradient left -> right #e6e6e6 -> white, radius 5 */
+.window-buttons {
+    -fx-background-color: linear-gradient(to right, #e6e6e6, white);
+    -fx-background-radius: 5;
+    -fx-padding: 3 13 4 13;
+    -fx-pref-width: 132;
+    -fx-pref-height: 28;
+}
+
+.win-btn {
+    -fx-pref-height: 21;
+    -fx-min-height: 21;
+    -fx-max-height: 21;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-alignment: center;
+}
+
+/* 22:46: minimise, 34 x 21 */
+.win-min {
+    -fx-pref-width: 34;
+    -fx-min-width: 34;
+    -fx-background-color: #e2e2e2,
+        linear-gradient(to bottom, #f6f6f6 0%, #b4b4b4 18.902%, #d7d7d7 60.409%, #f9f9f9 100%);
+    -fx-background-insets: 0, 0 0 0.5 0.3;
+    -fx-background-radius: 2 0 0 3;
+    -fx-padding: 5 0 0 0;
+}
+
+/* 20:41: maximise, 31 x 21 */
+.win-max {
+    -fx-pref-width: 31;
+    -fx-min-width: 31;
+    -fx-background-color: #f3f3f3,
+        linear-gradient(to bottom, #f6f6f6 0%, #b4b4b4 18.902%, #d7d7d7 60.409%, #f9f9f9 100%);
+    -fx-background-insets: 0, 0 0.5 0.5 0.5;
+    -fx-background-radius: 0;
+}
+
+/* 20:38: close, 41 x 21, red Aero gradient */
+.win-close {
+    -fx-pref-width: 41;
+    -fx-min-width: 41;
+    -fx-background-color: #f5ad9a,
+        linear-gradient(to bottom, #ffb399 5.93%, #d84d1d 20.192%, #da5427 47.596%, #e9886e 79.808%, #ffb399 100%);
+    -fx-background-insets: 0, 0 0.3 0.5 0;
+    -fx-background-radius: 0 2 3 0;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.win-min:hover, .win-max:hover {
+    -fx-background-color: #e2e2e2,
+        linear-gradient(to bottom, #fbfbfb 0%, #c6dcf0 18.902%, #b0d0ee 60.409%, #e5f1fb 100%);
+}
+
+.win-close:hover {
+    -fx-background-color: #f5ad9a,
+        linear-gradient(to bottom, #ffc4b0 5.93%, #e8613a 20.192%, #ea6a40 47.596%, #f3a08a 79.808%, #ffc4b0 100%);
+}
+
+/* 22:49: white line 11 x 1.3 */
+.win-glyph-line {
+    -fx-stroke: white;
+    -fx-stroke-width: 1.3;
+}
+
+/* 22:48: white square 6 x 6 */
+.win-glyph-box {
+    -fx-border-color: white;
+    -fx-border-width: 1;
+    -fx-background-color: transparent;
+}
+
+/* 22:119: white, border #d2d2d2 left/top/right, top-right radius 10 */
+.tab-bar {
+    -fx-background-color: #d2d2d2, white;
+    -fx-background-insets: 0, 1 1 0 1;
+    -fx-background-radius: 0 10 0 0, 0 9 0 0;
+    -fx-padding: 0 1 0 1;
+}
+
+/* 39:11 etc.: Sansation Regular 12px, #3f3f3f */
+.tab-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 14px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.tab-button:hover {
+    -fx-background-color: linear-gradient(to right, #ececec, #f6f6f6);
+}
+
+.tab-button:focused {
+    -fx-background-insets: 0;
+}
+
+/* 39:18: active tab, gradient #b8b8b8 -> #d9d9d9, bottom-left radius 10, inner shadow */
+.tab-button:selected {
+    -fx-background-color: linear-gradient(to right, #b8b8b8, #d9d9d9);
+    -fx-background-radius: 0 0 0 10;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.25), 4, 0, 0, 4);
+}
+
+/* 3:15: white, border #a9a9a9 (top border is covered by the tab bar) */
+.content-area {
+    -fx-background-color: #a9a9a9, white;
+    -fx-background-insets: 0, 0 1 1 1;
+}
+
+.upload-pane {
+    -fx-padding: 20;
+}
+
+.hint-label {
+    -fx-text-fill: #575757;
+    -fx-font-size: 14px;
+}
+
+/* Aero button, same family as the title bar buttons */
+.aero-button {
+    -fx-background-color: #707070,
+        linear-gradient(to bottom, #f2f2f2 0%, #ebebeb 49%, #dddddd 50%, #cfcfcf 100%);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 3, 2;
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 14px;
+    -fx-padding: 6 22 6 22;
+    -fx-min-width: 140;
+    -fx-cursor: hand;
+}
+
+.aero-button:hover {
+    -fx-background-color: #3c7fb1,
+        linear-gradient(to bottom, #eaf6fd 0%, #d9f0fc 49%, #bee6fd 50%, #a7d9f5 100%);
+}
+
+.aero-button:pressed {
+    -fx-background-color: #2c628b,
+        linear-gradient(to bottom, #e5f4fc 0%, #c4e5f6 49%, #98d1ef 50%, #68b3db 100%);
+}
+
+.aero-button:focused {
+    -fx-background-color: #3c7fb1, #9be4fe,
+        linear-gradient(to bottom, #f2f2f2 0%, #ebebeb 49%, #dddddd 50%, #cfcfcf 100%);
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+}
+
+.aero-button:disabled {
+    -fx-opacity: 1;
+    -fx-background-color: #adb2b5, #f4f4f4;
+    -fx-text-fill: #838383;
+    -fx-cursor: default;
+}
+
+.file-info {
+    -fx-background-color: #d2d2d2, #f7f7f7;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 3, 2;
+    -fx-padding: 10 14 10 14;
+}
+
+.info-key {
+    -fx-text-fill: #575757;
+    -fx-font-size: 13px;
+}
+
+.info-value {
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 13px;
+}
+
+.hash-field {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-font-family: "Monospaced";
+    -fx-font-size: 12px;
+    -fx-text-fill: #3f3f3f;
+}
+
+.hash-progress {
+    -fx-progress-color: #24aa12;
+}
+
+.transfer-label {
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 13px;
+    -fx-text-alignment: center;
+}
+
+/* Windows 7 style green progress bar */
+.aero-progress > .track {
+    -fx-background-color: #bcbcbc, linear-gradient(to bottom, #f3f3f3, #e0e0e0);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 2, 1;
+}
+
+.aero-progress > .bar {
+    -fx-background-color: linear-gradient(to bottom, #7cd271 0%, #24aa12 32.093%, #3cc22a 70%, #7cd271 100%);
+    -fx-background-insets: 1;
+    -fx-background-radius: 1;
+}
+
+/* Status bar placeholder until the StatusBar class is taken over (20:9) */
+.status-bar-placeholder {
+    -fx-background-color: #d2d2d2, #f3f3f3;
+    -fx-background-insets: 0, 0 1 1 1;
+    -fx-background-radius: 0 0 5 0, 0 0 4 0;
+    -fx-padding: 0 0 0 31;
+    -fx-pref-height: 34;
+    -fx-min-height: 34;
+}
+
+.status-bar-placeholder .label {
+    -fx-text-fill: #3f3f3f;
+    -fx-font-size: 14px;
+}
+
+/* Drag and drop: a file is dragged over the content area */
+.content-area.drop-target {
+    -fx-background-color: #a9a9a9, #3c7fb1, linear-gradient(to bottom, #f4faff, #e3f1fc);
+    -fx-background-insets: 0, 0 1 1 1, 3 4 4 4;
+}
