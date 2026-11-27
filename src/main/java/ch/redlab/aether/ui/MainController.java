@@ -103,8 +103,6 @@ public class MainController {
     private volatile UUID currentTransferId;
 
     private Stage stage;
-    private double dragOffsetX;
-    private double dragOffsetY;
 
     public MainController(AetherBackend backend) {
         this.backend = backend;
@@ -378,24 +376,6 @@ public class MainController {
     @FXML
     private void onClose() {
         stage.close();
-    }
-
-    private void makeDraggable(Node handle) {
-        handle.setOnMousePressed(e -> {
-            dragOffsetX = e.getScreenX() - stage.getX();
-            dragOffsetY = e.getScreenY() - stage.getY();
-        });
-        handle.setOnMouseDragged(e -> {
-            if (!stage.isMaximized()) {
-                stage.setX(e.getScreenX() - dragOffsetX);
-                stage.setY(e.getScreenY() - dragOffsetY);
-            }
-        });
-        handle.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 2) {
-                onMaximize();
-            }
-        });
     }
 
     // ---------------------------------------------------------------- helpers
