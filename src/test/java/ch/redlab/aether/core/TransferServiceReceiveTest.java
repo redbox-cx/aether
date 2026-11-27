@@ -136,6 +136,11 @@ class TransferServiceReceiveTest {
             decided.countDown();
             assertInstanceOf(Message.TransferAccept.class, sender.receive(WAIT));
         }
+
+        // The sender hung up after the accept. Wait until the receiver has noticed it and deleted its
+        // temporary .part file; otherwise @TempDir cleanup can race with the open file on Windows.
+        assertEquals(TransferStatus.FAILED, finalStatus());
+        assertEquals(List.of(), filesInDownloads());
     }
 
     @Test

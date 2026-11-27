@@ -1,7 +1,9 @@
 package ch.redlab.aether.core;
 
+import ch.redlab.aether.crypto.ChunkEncryptor;
 import ch.redlab.aether.crypto.CryptoService;
 import ch.redlab.aether.model.Chunk;
+import ch.redlab.aether.model.Device;
 import ch.redlab.aether.model.Direction;
 import ch.redlab.aether.model.FileInfo;
 import ch.redlab.aether.model.SessionKey;
@@ -16,6 +18,7 @@ import ch.redlab.aether.protocol.ProtocolException;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,14 +31,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Runs file transfers according to the message sequence of ATP v1 (Konzeptbericht 4.2).
  * <p>
+ * Sending side (UC2): {@link #send} starts a transfer on its own virtual thread.
  * Receiving side (UC3): {@link #handleIncoming} is the handler of the {@code TcpServer} and runs
- * on the thread of the connection. The sending side follows in a later step.
+ * on the thread of the connection.
  * <p>
  * Listener callbacks arrive on background threads.
  */
@@ -86,8 +94,235 @@ public class TransferService {
         }
         // The thread running the transfer sees the closed channel, cleans up and reports CANCELLED.
         current.cancelled = true;
-        sendQuietly(current.channel, new Message.Error(ErrorCode.CANCELLED, "Cancelled by user"));
-        current.channel.close();
+        MessageChannel channel = current.channel;
+        if (channel == null) {
+            return;
+        }
+        sendQuietly(channel, new Message.Error(ErrorCode.CANCELLED, "Cancelled by user"));
+        if (current.transfer.getDirection() == Direction.OUTGOING) {
+            channel.close();
+        }
+        // Receiving side: the connection stays open until the sender has hung up (see drain()).
+        // Closing it while chunks are still arriving makes Windows reset the connection,
+        // and the sender would lose the ERROR and report a failure instead of a cancel.
+    }
+
+    // ------------------------------------------------------------------ sending side
+
+    /**
+     * Starts sending a file to another device (UC2) and returns immediately.
+     * Status, security code and progress are reported through the listeners.
+     *
+     * @param info name, size and SHA-256 of the file, computed when the user picked it
+     */
+    public Transfer send(Device target, Path file, FileInfo info) {
+        Transfer transfer = new Transfer(UUID.randomUUID(), Direction.OUTGOING, target.name(), info);
+        Active current = new Active(transfer, null);
+        active.put(transfer.getId(), current);
+        Thread.ofVirtual().name("transfer-send").start(() -> runSend(current, target, file));
+        return transfer;
+    }
+
+    private void runSend(Active current, Device target, Path file) {
+        Transfer transfer = current.transfer;
+        UUID id = transfer.getId();
+        FileInfo info = transfer.getFile();
+        MessageChannel channel = null;
+        CompletableFuture<Message> reply = null;
+        fire(transfer);
+        try {
+            channel = MessageChannel.connect(target);
+            current.channel = channel;
+            if (current.cancelled) {
+                throw new IOException("Cancelled before the request was sent");
+            }
+
+            KeyPair keys = crypto.newKeyPair();
+            channel.send(new Message.TransferRequest(id, settings.getDeviceName(), info.name(), info.size(),
+                    info.sha256(), keys.getPublic().getEncoded()));
+
+            Message answer = channel.receive(timeouts.keyExchange());
+            if (!(answer instanceof Message.KeyExchange keyExchange)) {
+                finish(transfer, outcomeOf(answer, id));
+                return;
+            }
+            checkId(keyExchange.transferId(), id);
+            SessionKey session = crypto.deriveSessionKey(keys, keyExchange.receiverPublicKey(), id);
+            transfer.setSecurityCode(session.securityCode());
+            fire(transfer);
+
+            // The receiver declines on its own after the decision timeout; wait a little longer than that.
+            Message decision = channel.receive(timeouts.decision().plus(timeouts.idle()));
+            if (!(decision instanceof Message.TransferAccept accept)) {
+                finish(transfer, outcomeOf(decision, id));
+                return;
+            }
+            checkId(accept.transferId(), id);
+            update(transfer, TransferStatus.ACCEPTED);
+
+            // From now on only this reader thread receives, so an ERROR (e.g. CANCELLED)
+            // from the receiver is noticed while we are still sending chunks.
+            reply = readNextMessage(channel);
+            Outcome early = sendChunks(channel, file, transfer, session, reply);
+            if (early != null) {
+                finish(transfer, early);
+                return;
+            }
+            finish(transfer, outcomeOf(awaitReply(reply, timeouts.idle()), id));
+        } catch (ProtocolException e) {
+            if (!current.cancelled) {
+                sendQuietly(channel, new Message.Error(e.getCode(), e.getMessage()));
+            }
+            fail(current, e.getCode());
+        } catch (GeneralSecurityException e) {
+            sendQuietly(channel, new Message.Error(ErrorCode.DECRYPT_FAILED, "Key agreement failed"));
+            fail(current, ErrorCode.DECRYPT_FAILED);
+        } catch (IOException e) {
+            Outcome fromPeer = peerReason(reply);
+            if (fromPeer != null) {
+                finish(transfer, fromPeer);
+            } else {
+                if (!current.cancelled) {
+                    sendQuietly(channel, new Message.Error(ErrorCode.IO_ERROR, "Transfer failed"));
+                }
+                fail(current, ErrorCode.IO_ERROR);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail(current, ErrorCode.IO_ERROR);
+        } finally {
+            active.remove(id);
+            if (channel != null) {
+                channel.close();
+            }
+        }
+    }
+
+    /**
+     * Reads the file in blocks of 64 KiB, encrypts and sends them, then sends TRANSFER_COMPLETE.
+     *
+     * @return null if all chunks were sent, otherwise the outcome caused by an early message from the receiver
+     */
+    private Outcome sendChunks(MessageChannel channel, Path file, Transfer transfer, SessionKey session,
+                               CompletableFuture<Message> reply) throws IOException, GeneralSecurityException {
+        update(transfer, TransferStatus.RUNNING);
+        ChunkEncryptor encryptor = crypto.newEncryptor(session);
+        long size = transfer.getFile().size();
+        byte[] buffer = new byte[ProtocolConstants.CHUNK_SIZE];
+        long sent = 0;
+        long index = 0;
+
+        try (InputStream in = Files.newInputStream(file)) {
+            while (sent < size) {
+                if (reply.isDone()) {
+                    return outcomeOf(reply.join(), transfer.getId());
+                }
+                int length = in.readNBytes(buffer, 0, (int) Math.min(buffer.length, size - sent));
+                if (length == 0) {
+                    throw new ProtocolException(ErrorCode.IO_ERROR, "File is shorter than announced");
+                }
+                Chunk chunk = encryptor.encrypt(index, buffer, length);
+                channel.send(new Message.FileChunk(chunk.index(), chunk.iv(), chunk.ciphertext()));
+                sent += length;
+                index++;
+                transfer.setBytesTransferred(sent);
+                fire(transfer);
+            }
+            if (in.read() >= 0) {
+                throw new ProtocolException(ErrorCode.IO_ERROR, "File is longer than announced");
+            }
+        }
+        channel.send(new Message.TransferComplete(transfer.getId(), Math.toIntExact(index)));
+        return null;
+    }
+
+    /** Reads and ignores everything until the peer closes the connection or stays silent. */
+    private void drain(MessageChannel channel) {
+        try {
+            while (true) {
+                channel.receive(timeouts.idle());
+            }
+        } catch (IOException e) {
+            // Peer closed the connection (or timeout): now it is safe to close our side.
+        }
+    }
+
+    /** Receives one message on a separate thread. */
+    private static CompletableFuture<Message> readNextMessage(MessageChannel channel) {
+        CompletableFuture<Message> reply = new CompletableFuture<>();
+        Thread.ofVirtual().name("transfer-reply").start(() -> {
+            try {
+                reply.complete(channel.receive());
+            } catch (IOException e) {
+                reply.completeExceptionally(e);
+            }
+        });
+        return reply;
+    }
+
+    private static Message awaitReply(CompletableFuture<Message> reply, Duration timeout)
+            throws IOException, InterruptedException {
+        try {
+            return reply.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            throw new ProtocolException(ErrorCode.TIMEOUT, "No answer within " + timeout.toMillis() + " ms");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException io) {
+                throw io;
+            }
+            throw new IOException(e.getCause());
+        }
+    }
+
+    /**
+     * After a broken connection: if the receiver sent ERROR or ACK just before, that explains it better.
+     * Waits briefly, because the reader thread may not have delivered the message yet.
+     */
+    private static Outcome peerReason(CompletableFuture<Message> reply) {
+        if (reply == null) {
+            return null;
+        }
+        try {
+            Message message = reply.get(1, TimeUnit.SECONDS);
+            return message instanceof Message.Error || message instanceof Message.TransferAck
+                    ? outcomeOf(message, null) : null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException | TimeoutException | ProtocolException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Turns an answer of the receiver into the final outcome on the sending side.
+     *
+     * @param id expected transfer id, or null to skip the check
+     * @throws ProtocolException if the message is not allowed at this point
+     */
+    private static Outcome outcomeOf(Message message, UUID id) throws ProtocolException {
+        if (message instanceof Message.TransferAck ack) {
+            if (id != null) {
+                checkId(ack.transferId(), id);
+            }
+            return Message.TransferAck.OK.equals(ack.status())
+                    ? new Outcome(TransferStatus.COMPLETED, null)
+                    : new Outcome(TransferStatus.FAILED, ack.status());
+        }
+        if (message instanceof Message.TransferReject reject) {
+            return new Outcome(TransferStatus.REJECTED, reject.reason());
+        }
+        if (message instanceof Message.Error error) {
+            TransferStatus status = error.code() == ErrorCode.CANCELLED ? TransferStatus.CANCELLED : TransferStatus.FAILED;
+            return new Outcome(status, error.code().name());
+        }
+        throw new ProtocolException(ErrorCode.IO_ERROR, "Unexpected " + message.type());
+    }
+
+    private static void checkId(UUID received, UUID expected) throws ProtocolException {
+        if (!expected.equals(received)) {
+            throw new ProtocolException(ErrorCode.IO_ERROR, "Message for another transfer: " + received);
+        }
     }
 
     // ------------------------------------------------------------------ receiving side
@@ -122,7 +357,8 @@ public class TransferService {
         Transfer transfer = new Transfer(id, Direction.INCOMING, request.senderName(),
                 new FileInfo(name.get(), request.fileSize(), request.sha256()));
         IncomingRequest decision = new IncomingRequest(transfer);
-        Active current = new Active(transfer, channel, decision);
+        Active current = new Active(transfer, decision);
+        current.channel = channel;
         if (active.putIfAbsent(id, current) != null) {
             sendQuietly(channel, new Message.Error(ErrorCode.IO_ERROR, "Transfer id already in use"));
             return;
@@ -138,10 +374,11 @@ public class TransferService {
             if (!askUser(channel, decision)) {
                 return;
             }
-            Outcome outcome = receiveChunks(channel, request, transfer, session);
-            finish(transfer, outcome.status(), outcome.message());
+            finish(transfer, receiveChunks(channel, request, current, session));
         } catch (ProtocolException e) {
-            sendQuietly(channel, new Message.Error(e.getCode(), e.getMessage()));
+            if (!current.cancelled) {
+                sendQuietly(channel, new Message.Error(e.getCode(), e.getMessage()));
+            }
             fail(current, e.getCode());
         } catch (GeneralSecurityException e) {
             sendQuietly(channel, new Message.Error(ErrorCode.DECRYPT_FAILED, "Decryption failed"));
@@ -187,8 +424,9 @@ public class TransferService {
      * gives it its real name once the SHA-256 checksum is correct. The temporary file is
      * deleted in every other case (TC07), before the final status is reported.
      */
-    private Outcome receiveChunks(MessageChannel channel, Message.TransferRequest request, Transfer transfer,
-                               SessionKey session) throws IOException, GeneralSecurityException {
+    private Outcome receiveChunks(MessageChannel channel, Message.TransferRequest request, Active current,
+                                  SessionKey session) throws IOException, GeneralSecurityException {
+        Transfer transfer = current.transfer;
         Path folder = settings.getDownloadDir();
         Files.createDirectories(folder);
         Path part = Files.createTempFile(folder, ".aether-", ".part");
@@ -204,6 +442,10 @@ public class TransferService {
             try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(part))) {
                 while (true) {
                     Message message = channel.receive(timeouts.idle());
+                    if (current.cancelled) {
+                        drain(channel);
+                        return new Outcome(TransferStatus.CANCELLED, ErrorCode.CANCELLED.name());
+                    }
                     if (message instanceof Message.FileChunk chunk) {
                         if (chunk.chunkIndex() != nextIndex) {
                             throw new ProtocolException(ErrorCode.DECRYPT_FAILED,
@@ -275,6 +517,10 @@ public class TransferService {
         }
     }
 
+    private void finish(Transfer transfer, Outcome outcome) {
+        finish(transfer, outcome.status(), outcome.message());
+    }
+
     /** Sets a final status once; later calls are ignored (e.g. FAILED after a CANCELLED). */
     private void finish(Transfer transfer, TransferStatus status, String message) {
         synchronized (transfer) {
@@ -298,6 +544,9 @@ public class TransferService {
     }
 
     private static void sendQuietly(MessageChannel channel, Message message) {
+        if (channel == null) {
+            return;
+        }
         try {
             channel.send(message);
         } catch (IOException ignored) {
@@ -320,13 +569,14 @@ public class TransferService {
     /** A transfer that is currently running, so it can be cancelled. */
     private static final class Active {
         final Transfer transfer;
-        final MessageChannel channel;
         final IncomingRequest request;
+        /** Null on the sending side until the connection is open. */
+        volatile MessageChannel channel;
         volatile boolean cancelled;
 
-        Active(Transfer transfer, MessageChannel channel, IncomingRequest request) {
+        /** @param request the pending user decision, null on the sending side */
+        Active(Transfer transfer, IncomingRequest request) {
             this.transfer = transfer;
-            this.channel = channel;
             this.request = request;
         }
     }
