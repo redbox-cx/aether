@@ -18,7 +18,9 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import ch.redlab.aether.ui.ProgressPane?>
 <?import ch.redlab.aether.ui.RequestsPane?>
+<?import ch.redlab.aether.ui.SettingsPane?>
 <?import ch.redlab.aether.ui.SvgIcon?>
 <?import javafx.scene.shape.Line?>
 <?import javafx.scene.shape.SVGPath?>
@@ -154,14 +156,18 @@
                                 <Label fx:id="transferLabel" styleClass="transfer-label" wrapText="true"/>
                                 <ProgressBar fx:id="transferProgress" styleClass="aero-progress"
                                              maxWidth="Infinity" progress="0"/>
+                                <Button fx:id="sendCancelButton" styleClass="aero-button" text="Cancel"
+                                        onAction="#onCancelSend" visible="false" managed="false"/>
                             </VBox>
                         </VBox>
-
-                        <Label fx:id="placeholderPane" styleClass="hint-label" visible="false"
-                               text="This section is coming soon."/>
-
                         <!-- F-04 / F-05: incoming requests, built in RequestsPane -->
                         <RequestsPane fx:id="requestsPane" visible="false"/>
+
+                        <!-- F-08: all transfers with progress and speed, built in ProgressPane -->
+                        <ProgressPane fx:id="progressPane" visible="false"/>
+
+                        <!-- Device name and folder for received files, built in SettingsPane -->
+                        <SettingsPane fx:id="settingsPane" visible="false"/>
                     </StackPane>
                 </VBox>
             </HBox>
