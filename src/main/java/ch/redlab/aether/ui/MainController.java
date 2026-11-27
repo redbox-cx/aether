@@ -260,7 +260,7 @@ public class MainController {
 
         fileNameLabel.setText(file.getFileName().toString());
         fileSizeLabel.setText(formatSize(file.toFile().length()));
-        hashField.setText("wird berechnet …");
+        hashField.setText("computing …");
         setShown(fileInfoGrid, true);
         setShown(hashProgress, true);
         updateSendButton();
@@ -288,7 +288,7 @@ public class MainController {
                 return;
             }
             Throwable error = task.getException();
-            hashField.setText("Fehler: " + (error == null ? "unbekannt" : error.getMessage()));
+            hashField.setText("Error: " + (error == null ? "unknown" : error.getMessage()));
             setShown(hashProgress, false);
             selectedFile = null;
             updateSendButton();
