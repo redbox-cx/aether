@@ -380,17 +380,17 @@
     -fx-background-radius: 1;
 }
 
-/* Status bar placeholder until the StatusBar class is taken over (20:9) */
-.status-bar-placeholder {
+/* Status bar (20:9): speed on the left, active transfers on the right */
+.status-bar {
     -fx-background-color: #d2d2d2, #f3f3f3;
     -fx-background-insets: 0, 0 1 1 1;
     -fx-background-radius: 0 0 5 0, 0 0 4 0;
-    -fx-padding: 0 0 0 31;
+    -fx-padding: 0 31 0 31;
     -fx-pref-height: 34;
     -fx-min-height: 34;
 }
 
-.status-bar-placeholder .label {
+.status-bar .label {
     -fx-text-fill: #3f3f3f;
     -fx-font-size: 14px;
 }
@@ -442,6 +442,10 @@
     -fx-font-weight: bold;
 }
 
+.request-card .text-field {
+    -fx-font-size: 14px;
+}
+
 .request-card .aero-button {
     -fx-min-width: 100;
 }
@@ -466,6 +470,6 @@
     -fx-background-radius: 0;
 }
 
-.native-frame .status-bar-placeholder {
+.native-frame .status-bar {
     -fx-background-radius: 0;
 }

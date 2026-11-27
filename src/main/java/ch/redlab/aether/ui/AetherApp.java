@@ -7,13 +7,10 @@ import ch.redlab.aether.core.Settings;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
-import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -48,7 +45,6 @@ public class AetherApp extends Application {
         if (sansation) {
             root.getStyleClass().add("sansation");
         }
-        controller.setStatusBar(createStatusBar());
         controller.setHostServices(getHostServices());
 
         // Normal Windows window frame: opaque scene, so text keeps ClearType smoothing (a transparent window
@@ -85,15 +81,6 @@ public class AetherApp extends Application {
         if (backend != null) {
             backend.stop();
         }
-    }
-
-    /** Temporary status bar (Figma 20:9) until the StatusBar class is taken over. */
-    private static HBox createStatusBar() {
-        HBox bar = new HBox(new Label("0 MiB/s"));
-        bar.setMinWidth(0);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.getStyleClass().add("status-bar-placeholder");
-        return bar;
     }
 
     /**

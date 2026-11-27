@@ -9,6 +9,9 @@ import ch.redlab.aether.model.FileInfo;
 import ch.redlab.aether.model.Transfer;
 import ch.redlab.aether.model.TransferStatus;
 import javafx.geometry.Insets;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -36,6 +39,7 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -48,7 +52,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Controller of the main window (F-02 choose device, F-03 choose and send file,
- * F-04 / F-05 incoming requests in the Requests tab).
+ * F-04 / F-05 incoming requests, F-08 progress, settings and status bar).
  * Contains no network logic, it only talks to {@link AetherBackend}.
  * All backend callbacks arrive on background threads and are moved to the FX thread with
  * {@link Platform#runLater(Runnable)}.
@@ -83,7 +87,8 @@ public class MainController {
     @FXML private ToggleButton settingsTab;
     @FXML private StackPane contentArea;
     @FXML private VBox uploadPane;
-    @FXML private Label placeholderPane;
+    @FXML private ProgressPane progressPane;
+    @FXML private SettingsPane settingsPane;
     @FXML private RequestsPane requestsPane;
 
     @FXML private Label targetLabel;
@@ -97,6 +102,7 @@ public class MainController {
     @FXML private VBox transferBox;
     @FXML private Label transferLabel;
     @FXML private ProgressBar transferProgress;
+    @FXML private Button sendCancelButton;
 
     /** Picked file; null until the user chose one. */
     private Path selectedFile;
@@ -109,6 +115,11 @@ public class MainController {
     private Stage stage;
     private HostServices hostServices;
 
+    private final SpeedMeter speedMeter = new SpeedMeter();
+    private final StatusBar statusBar = new StatusBar();
+    /** Refreshes speeds and the status bar twice a second, so they also drop to 0 when nothing arrives. */
+    private final Timeline ticker = new Timeline(new KeyFrame(Duration.millis(500), e -> refreshSpeeds()));
+
     public MainController(AetherBackend backend) {
         this.backend = backend;
     }
@@ -119,6 +130,8 @@ public class MainController {
         setUpTabs();
         setUpFileDrop();
         setUpRequests();
+        setUpProgress();
+        settingsPane.setSettings(backend.getSettings());
 
         backend.addDeviceListener(list -> Platform.runLater(() -> updateDevices(list)));
         backend.addTransferListener(new TransferListener() {
@@ -129,13 +142,7 @@ public class MainController {
 
             @Override
             public void onTransferUpdated(Transfer transfer) {
-                Platform.runLater(() -> {
-                    if (transfer.getDirection() == Direction.INCOMING) {
-                        requestsPane.update(transfer);
-                    } else {
-                        showTransfer(transfer);
-                    }
-                });
+                Platform.runLater(() -> trackTransfer(transfer));
             }
         });
         updateDevices(backend.getDevices());
@@ -156,17 +163,13 @@ public class MainController {
         this.hostServices = hostServices;
     }
 
-    /** Places the status bar below the content (Figma 20:9). */
-    void setStatusBar(Node statusBar) {
-        mainRoot.setBottom(statusBar);
-    }
-
     /** Stops the background hash thread. The backend itself is stopped by {@link AetherApp}. */
     void shutdown() {
         if (hashTask != null) {
             hashTask.cancel();
         }
         hashExecutor.shutdownNow();
+        ticker.stop();
     }
 
     // ---------------------------------------------------------------- devices (F-02)
@@ -320,7 +323,18 @@ public class MainController {
         }
         Transfer transfer = backend.sendFile(target, selectedFile, selectedFileInfo);
         currentTransferId = transfer.getId();
+        progressPane.update(transfer);
         showTransfer(transfer);
+    }
+
+    /** Cancels the transfer shown in the upload tab (UC2 exception "Abbrechen"). */
+    @FXML
+    private void onCancelSend() {
+        UUID id = currentTransferId;
+        if (id != null) {
+            sendCancelButton.setDisable(true);
+            cancelInBackground(id);
+        }
     }
 
     /** "Send" is only active when a device is selected and the file's hash is ready. */
@@ -352,6 +366,10 @@ public class MainController {
         transferProgress.setProgress(transfer.getProgress());
         TransferStatus status = transfer.getStatus();
         setShown(transferProgress, status == TransferStatus.RUNNING || status == TransferStatus.COMPLETED);
+        setShown(sendCancelButton, !status.isFinal());
+        if (status == TransferStatus.REQUESTED) {
+            sendCancelButton.setDisable(false);
+        }
     }
 
     private static String detail(Transfer transfer) {
@@ -361,8 +379,7 @@ public class MainController {
     // ---------------------------------------------------------------- incoming requests (F-04 / F-05)
 
     private void setUpRequests() {
-        // Cancelling sends an ERROR over the network, so it does not run on the FX thread.
-        requestsPane.setOnCancel(id -> Thread.ofVirtual().name("cancel").start(() -> backend.cancel(id)));
+        requestsPane.setOnCancel(this::cancelInBackground);
         requestsPane.setOnOpenFolder(this::openFolder);
         requestsPane.pendingProperty().addListener((obs, old, count) ->
                 requestsTab.setText(IncomingText.tabTitle(count.intValue())));
@@ -371,6 +388,7 @@ public class MainController {
     /** Shows a new request and brings the window to the front, so the user notices it (UC3 step 2). */
     private void showRequest(IncomingRequest request) {
         requestsPane.addRequest(request);
+        progressPane.update(request.getTransfer());
         tabs.selectToggle(requestsTab);
         if (stage != null) {
             stage.setIconified(false);
@@ -385,6 +403,42 @@ public class MainController {
         }
     }
 
+    // ---------------------------------------------------------------- progress (F-08) and status bar
+
+    private void setUpProgress() {
+        progressPane.setOnCancel(this::cancelInBackground);
+        progressPane.setSpeedSource(id -> speedMeter.bytesPerSecond(id, System.nanoTime()));
+        mainRoot.setBottom(statusBar);
+        ticker.setCycleCount(Animation.INDEFINITE);
+        ticker.play();
+    }
+
+    /** Every status or progress change of any transfer ends up here, on the FX thread. */
+    private void trackTransfer(Transfer transfer) {
+        if (transfer.getStatus().isFinal()) {
+            speedMeter.remove(transfer.getId());
+        } else {
+            speedMeter.record(transfer.getId(), transfer.getBytesTransferred(), System.nanoTime());
+        }
+        progressPane.update(transfer);
+        if (transfer.getDirection() == Direction.INCOMING) {
+            requestsPane.update(transfer);
+        } else {
+            showTransfer(transfer);
+        }
+        refreshSpeeds();
+    }
+
+    private void refreshSpeeds() {
+        progressPane.refreshSpeeds();
+        statusBar.show(speedMeter.totalBytesPerSecond(System.nanoTime()), progressPane.activeCount());
+    }
+
+    /** Cancelling sends an ERROR over the network, so it does not run on the FX thread. */
+    private void cancelInBackground(UUID id) {
+        Thread.ofVirtual().name("cancel").start(() -> backend.cancel(id));
+    }
+
     // ---------------------------------------------------------------- tabs and window
 
     private void setUpTabs() {
@@ -396,12 +450,8 @@ public class MainController {
             }
             uploadPane.setVisible(now == uploadTab);
             requestsPane.setVisible(now == requestsTab);
-            placeholderPane.setVisible(now == progressTab || now == settingsTab);
-            if (now == progressTab) {
-                placeholderPane.setText("Progress (F-08) is coming soon.");
-            } else if (now == settingsTab) {
-                placeholderPane.setText("Settings are coming soon.");
-            }
+            progressPane.setVisible(now == progressTab);
+            settingsPane.setVisible(now == settingsTab);
         });
     }
 
