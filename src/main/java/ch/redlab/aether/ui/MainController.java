@@ -7,6 +7,7 @@ import ch.redlab.aether.model.Device;
 import ch.redlab.aether.model.FileInfo;
 import ch.redlab.aether.model.Transfer;
 import ch.redlab.aether.model.TransferStatus;
+import javafx.geometry.Insets;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -131,18 +132,13 @@ public class MainController {
         updateSendButton();
     }
 
-    /** Called by {@link AetherApp} once the stage exists: window dragging and buttons need it. */
+    /** Called by {@link AetherApp} once the stage exists. Moving, resizing and the window buttons come from Windows. */
     void attach(Stage stage) {
         this.stage = stage;
-        makeDraggable(titleStrip);
-        makeDraggable(headerBackground);
-
-        // Left column starts at the very top, the right part at the grey header (Figma 22:118).
-        double sideWidth = titleStrip.getParent() instanceof Region side ? side.getPrefWidth() : 0;
-        double headerTop = StackPane.getMargin(headerBackground).getTop();
-        WindowResizer.install(stage,
-                x -> x < sideWidth ? 0 : headerTop,
-                node -> node == windowButtons);
+        // The native frame brings its own buttons; the Figma buttons are hidden and the grey header
+        // starts at the very top instead of leaving the transparent strip of the frameless design.
+        setShown(windowButtons, false);
+        StackPane.setMargin(headerBackground, new Insets(0));
     }
 
     /** Places the status bar below the content (Figma 20:9). */

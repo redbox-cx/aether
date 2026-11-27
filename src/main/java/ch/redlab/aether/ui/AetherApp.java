@@ -16,7 +16,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,11 +48,12 @@ public class AetherApp extends Application {
         }
         controller.setStatusBar(createStatusBar());
 
-        Scene scene = new Scene(root, WIDTH, HEIGHT);
-        scene.setFill(Color.TRANSPARENT);
+        // Normal Windows window frame: opaque scene, so text keeps ClearType smoothing (a transparent window
+        // makes JavaFX fall back to blurry grayscale text).
+        root.getStyleClass().add("native-frame");
+        Scene scene = new Scene(root, WIDTH, HEIGHT, Color.web("#f3f3f3"));
         scene.getStylesheets().add(AetherApp.class.getResource("main-view.css").toExternalForm());
 
-        stage.initStyle(StageStyle.TRANSPARENT);
         stage.setScene(scene);
         stage.setTitle("Aether");
         stage.setMinWidth(MIN_WIDTH);
